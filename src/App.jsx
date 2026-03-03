@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CHALLENGES } from "./data/challenges";
 import { TEAM_COLORS } from "./components/BattleRound";
 import VPythonScene from "./components/VPythonScene";
 import PaperGame from "./components/PaperGame";
 import BattleRound from "./components/BattleRound";
 import ReflectionPage from "./components/ReflectionPage";
+import { socket } from "./socket";
 
 // ─── 슬라이드 데이터 ─────────────────────────────────────────────────────────
 
@@ -149,12 +150,13 @@ const STEP_LABELS = [
 
 // ─── 팀 초기화 ───────────────────────────────────────────────────────────────
 
-function initTeams(count, names) {
+function initTeams(count, memberLists) {
   return Array.from({ length: count }, (_, i) => ({
     id: i,
-    name: names[i] || `${TEAM_COLORS[i].name}팀`,
+    name: `${TEAM_COLORS[i].name}팀`,
     color: TEAM_COLORS[i],
     totalScore: 0,
+    members: memberLists[i] || [],
   }));
 }
 
@@ -188,9 +190,20 @@ export default function App() {
   const [apiKey, setApiKey] = useState("");
   const [teamCount, setTeamCount] = useState(4);
   const [timerSec, setTimerSec] = useState(180);
-  const [teamNames, setTeamNames] = useState(Array(8).fill(""));
+  const [studentText, setStudentText] = useState("");
   const [teams, setTeams] = useState([]);
   const [roundResults, setRoundResults] = useState([]); // [{challengeIndex, teams}]
+
+  // 학생 명단 파싱 (엑셀 복붙: "1\t김철수" 형태 자동 처리)
+  const studentList = studentText
+    .split(/[\n\r]+/)
+    .map((l) => l.replace(/^\d+[\.\)\s\t]+/, "").replace(/\t/g, " ").trim())
+    .filter(Boolean);
+
+  // 라운드로빈 팀 배정
+  const memberLists = Array.from({ length: teamCount }, (_, i) =>
+    studentList.filter((_, j) => j % teamCount === i)
+  );
 
   const current = FLOW[step];
   const totalSteps = FLOW.length;
@@ -247,12 +260,17 @@ export default function App() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div>
                   <Label>👥 팀 수</Label>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    {[2, 3, 4, 5, 6, 7, 8].map((n) => (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    {[2,3,4,5,6,7,8,9,10,11,12,13,14].map((n) => (
                       <button
                         key={n}
                         onClick={() => setTeamCount(n)}
-                        style={segBtn(teamCount === n, "#7c3aed", "#a78bfa")}
+                        style={{
+                          ...segBtn(teamCount === n, "#7c3aed", "#a78bfa"),
+                          flex: "0 0 auto",
+                          padding: "7px 10px",
+                          minWidth: 34,
+                        }}
                       >
                         {n}
                       </button>
@@ -276,31 +294,63 @@ export default function App() {
               </div>
             </Card>
 
-            {/* 팀 이름 */}
+            {/* 학생 명단 붙여넣기 */}
             <Card>
-              <Label>✏️ 팀 이름 (선택)</Label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                {Array.from({ length: teamCount }, (_, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: TEAM_COLORS[i].bg, flexShrink: 0 }} />
-                    <input
-                      value={teamNames[i]}
-                      onChange={(e) => {
-                        const n = [...teamNames];
-                        n[i] = e.target.value;
-                        setTeamNames(n);
+              <Label>📋 학생 명단 (엑셀에서 복붙)</Label>
+              <textarea
+                value={studentText}
+                onChange={(e) => setStudentText(e.target.value)}
+                placeholder={"엑셀 이름 열을 복사해 붙여넣으세요\n번호+탭 형식(1\t김철수)도 자동 처리됩니다\n비워두면 팀 색 이름으로 진행합니다"}
+                rows={5}
+                style={{ ...INPUT_S, resize: "vertical", lineHeight: 1.5 }}
+              />
+              {studentList.length > 0 && (
+                <div style={{ fontSize: "0.75rem", color: "#34d399", marginTop: 5 }}>
+                  ✓ {studentList.length}명 인식 · 팀당 약 {Math.ceil(studentList.length / teamCount)}명
+                </div>
+              )}
+
+              {/* 팀 배정 미리보기 */}
+              {studentList.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns:
+                      teamCount <= 4 ? "repeat(2, 1fr)"
+                      : teamCount <= 8 ? "repeat(4, 1fr)"
+                      : "repeat(7, 1fr)",
+                    gap: 5,
+                  }}
+                >
+                  {memberLists.map((members, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        background: TEAM_COLORS[i].light,
+                        border: `1px solid ${TEAM_COLORS[i].border}`,
+                        borderRadius: 8,
+                        padding: "5px 7px",
                       }}
-                      placeholder={`${TEAM_COLORS[i].name}팀`}
-                      style={{ ...INPUT_S, padding: "6px 10px", fontSize: "0.82rem" }}
-                    />
-                  </div>
-                ))}
-              </div>
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: TEAM_COLORS[i].bg, flexShrink: 0 }} />
+                        <span style={{ fontSize: "0.7rem", fontWeight: 700, color: TEAM_COLORS[i].text }}>
+                          {TEAM_COLORS[i].name}팀
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "0.63rem", color: TEAM_COLORS[i].text, opacity: 0.8, lineHeight: 1.4 }}>
+                        {members.length > 0 ? members.join(", ") : "(없음)"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
             <button
               onClick={() => {
-                setTeams(initTeams(teamCount, teamNames));
+                setTeams(initTeams(teamCount, memberLists));
                 next();
               }}
               disabled={!apiKey}

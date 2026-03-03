@@ -11,11 +11,17 @@ const TEAM_COLORS = [
   { bg: "#ec4899", light: "rgba(236,72,153,0.12)", border: "rgba(236,72,153,0.35)", text: "#f9a8d4", name: "분홍" },
   { bg: "#06b6d4", light: "rgba(6,182,212,0.12)", border: "rgba(6,182,212,0.35)", text: "#67e8f9", name: "하늘" },
   { bg: "#f97316", light: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.35)", text: "#fdba74", name: "주황" },
+  { bg: "#84cc16", light: "rgba(132,204,22,0.12)", border: "rgba(132,204,22,0.35)", text: "#bef264", name: "라임" },
+  { bg: "#14b8a6", light: "rgba(20,184,166,0.12)", border: "rgba(20,184,166,0.35)", text: "#5eead4", name: "청록" },
+  { bg: "#6366f1", light: "rgba(99,102,241,0.12)", border: "rgba(99,102,241,0.35)", text: "#a5b4fc", name: "인디고" },
+  { bg: "#d97706", light: "rgba(217,119,6,0.12)", border: "rgba(217,119,6,0.35)", text: "#fcd34d", name: "앰버" },
+  { bg: "#94a3b8", light: "rgba(148,163,184,0.12)", border: "rgba(148,163,184,0.35)", text: "#cbd5e1", name: "슬레이트" },
+  { bg: "#f43f5e", light: "rgba(244,63,94,0.12)", border: "rgba(244,63,94,0.35)", text: "#fda4af", name: "장미" },
 ];
 
 export { TEAM_COLORS };
 
-const MEDALS = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"];
+const MEDALS = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟", "1️⃣1️⃣", "1️⃣2️⃣", "1️⃣3️⃣", "1️⃣4️⃣"];
 
 const INPUT_STYLE = {
   width: "100%",
@@ -515,25 +521,40 @@ Scoring: accuracy(0-60)+prompt_clarity(0-20)+creativity(0-10)+completeness(0-10)
                     marginBottom: 6,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <div
-                      style={{
-                        width: 9,
-                        height: 9,
-                        borderRadius: "50%",
-                        background: c.bg,
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontWeight: 700,
-                        color: c.text,
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      {t.name}
-                    </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <div
+                        style={{
+                          width: 9,
+                          height: 9,
+                          borderRadius: "50%",
+                          background: c.bg,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: c.text,
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        {t.name}
+                      </span>
+                    </div>
+                    {t.members?.length > 0 && (
+                      <div
+                        style={{
+                          fontSize: "0.62rem",
+                          color: c.text,
+                          opacity: 0.65,
+                          paddingLeft: 14,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {t.members.join(" · ")}
+                      </div>
+                    )}
                   </div>
                   {t.submitted && phase === "input" && (
                     <span
